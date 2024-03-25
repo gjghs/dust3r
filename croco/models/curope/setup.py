@@ -3,7 +3,7 @@
 
 from setuptools import setup
 from torch import cuda
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, ROCM_HOME
+from torch.utils.cpp_extension import BuildExtension, CUDAExtension
 
 # compile for all possible CUDA architectures
 all_cuda_archs = cuda.get_gencode_flags().replace('compute=','arch=').split()

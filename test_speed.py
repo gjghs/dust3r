@@ -4,12 +4,6 @@ from dust3r.utils.image import load_images
 from dust3r.image_pairs import make_pairs
 from dust3r.utils.device import collate_with_cat
 
-# from pytorch_nndct.apis import torch_quantizer
-
-from torch.ao.quantization import get_default_qconfig, get_default_qat_qconfig_mapping
-from torch.ao.quantization.quantize_fx import prepare_fx, convert_fx
-from torch.ao.quantization import QConfigMapping
-
 if __name__ == '__main__':
     model_path = "checkpoints/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth"
     device = torch.device('cuda')

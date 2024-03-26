@@ -44,7 +44,7 @@ class RoPE2DQuant(torch.nn.Module):
         return torch.cat((-x2, x1), dim=-1)
         
     def apply_rope1d(self, tokens, pos1d, cos, sin):
-        assert pos1d.ndim==2
+        pos1d = pos1d.long()
         cos = torch.nn.functional.embedding(pos1d, cos)[:, None, :, :]
         sin = torch.nn.functional.embedding(pos1d, sin)[:, None, :, :]
         return (tokens * cos) + (self.rotate_half(tokens) * sin)
@@ -89,7 +89,7 @@ class AsymmetricCroCo3DStereoQuant(CroCoNet):
         super().__init__(**croco_kwargs)
 
         # dust3r specific initialization
-        self.dec_blocks2 = deepcopy(self.dec_blocks)
+        # self.dec_blocks2 = deepcopy(self.dec_blocks)
         self.set_downstream_head(output_mode, head_type, landscape_only, depth_mode, conf_mode, **croco_kwargs)
         self.set_freeze(freeze)
 
@@ -98,6 +98,12 @@ class AsymmetricCroCo3DStereoQuant(CroCoNet):
             Block(croco_kwargs['enc_embed_dim'], croco_kwargs['enc_num_heads'], croco_kwargs['mlp_ratio'], \
                   qkv_bias=True, norm_layer=croco_kwargs['norm_layer'], rope=self.rope)
             for i in range(croco_kwargs['enc_depth'])])
+        
+        self._set_decoder(croco_kwargs['enc_embed_dim'], croco_kwargs['dec_embed_dim'], \
+                          croco_kwargs['dec_num_heads'], croco_kwargs['dec_depth'], \
+                          croco_kwargs['mlp_ratio'], croco_kwargs['norm_layer'], \
+                          croco_kwargs['norm_im2_in_dec'])
+        self.dec_blocks2 = deepcopy(self.dec_blocks)
 
     def _set_patch_embed(self, img_size=224, patch_size=16, enc_embed_dim=768):
         self.patch_embed = PatchEmbedDust3RQuant(img_size, patch_size, 3, enc_embed_dim)

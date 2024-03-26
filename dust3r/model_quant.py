@@ -8,7 +8,7 @@ from copy import deepcopy
 import torch
 import torch.nn as nn
 
-from .utils.misc import fill_default_args, freeze_all_params, interleave, transpose_to_landscape
+from .utils.misc import fill_default_args, freeze_all_params, interleave
 from .heads import head_factory
 from dust3r.patch_embed import PatchEmbedDust3RQuant
 
@@ -16,6 +16,54 @@ import dust3r.utils.path_to_croco  # noqa: F401
 from models.croco import CroCoNet  # noqa
 from models.blocks import Block
 inf = float('inf')
+
+def transposed(dic):
+    return {k: v.swapaxes(1, 2) for k, v in dic.items()}
+
+def transpose_to_landscape(head, activate=True):
+    """ Predict in the correct aspect-ratio,
+        then transpose the result in landscape 
+        and stack everything back together.
+    """
+    def wrapper_no(decout, true_shape):
+        # B = len(true_shape)
+        # assert true_shape[0:1].allclose(true_shape), 'true_shape must be all identical'
+        H, W = true_shape[0].cpu().tolist()
+        res = head(decout, (H, W))
+        return res
+
+    def wrapper_yes(decout, true_shape):
+        # B = len(true_shape)
+        B = true_shape.size(0)
+        # by definition, the batch is in landscape mode so W >= H
+        H, W = int(true_shape.min()), int(true_shape.max())
+
+        height, width = true_shape.T
+        is_landscape = (width >= height)
+        is_portrait = ~is_landscape
+
+        # true_shape = true_shape.cpu()
+        if is_landscape.all():
+            return head(decout, (H, W))
+        if is_portrait.all():
+            return transposed(head(decout, (W, H)))
+
+        # batch is a mix of both portraint & landscape
+        def selout(ar): return [d[ar] for d in decout]
+        l_result = head(selout(is_landscape), (H, W))
+        p_result = transposed(head(selout(is_portrait),  (W, H)))
+
+        # allocate full result
+        result = {}
+        for k in l_result | p_result:
+            x = l_result[k].new(B, *l_result[k].shape[1:])
+            x[is_landscape] = l_result[k]
+            x[is_portrait] = p_result[k]
+            result[k] = x
+
+        return result
+
+    return wrapper_yes if activate else wrapper_no
 
 class RoPE2DQuant(torch.nn.Module):
         
@@ -29,8 +77,10 @@ class RoPE2DQuant(torch.nn.Module):
         D = tokens.size(3) // 2
         seq_len = positions.max().int()+1
         if (D,seq_len,device,dtype) not in self.cache:
-            inv_freq = 1.0 / (self.base ** (torch.arange(0, D, 2).float().to(device) / D))
-            t = torch.arange(seq_len, device=device, dtype=inv_freq.dtype)
+            # inv_freq = 1.0 / (self.base ** (torch.arange(0, D, 2).float().to(device) / D))
+            inv_freq = 1.0 / (self.base ** ((tokens.new_ones((D + 1) // 2) * 2).cumsum(0) - 2) / D)
+            # t = torch.arange(seq_len, device=device, dtype=inv_freq.dtype)
+            t = inv_freq.new_ones(seq_len).cumsum(0) - 1
             freqs = torch.einsum("i,j->ij", t, inv_freq).to(dtype)
             freqs = torch.cat((freqs, freqs), dim=-1)
             cos = freqs.cos() # (Seq, Dim)
@@ -89,7 +139,6 @@ class AsymmetricCroCo3DStereoQuant(CroCoNet):
         super().__init__(**croco_kwargs)
 
         # dust3r specific initialization
-        # self.dec_blocks2 = deepcopy(self.dec_blocks)
         self.set_downstream_head(output_mode, head_type, landscape_only, depth_mode, conf_mode, **croco_kwargs)
         self.set_freeze(freeze)
 

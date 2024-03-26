@@ -47,7 +47,8 @@ class DPTOutputAdapter_fix(DPTOutputAdapter):
         layers = [self.adapt_tokens(l) for l in layers]
 
         # Reshape tokens to spatial representation
-        layers = [rearrange(l, 'b (nh nw) c -> b c nh nw', nh=N_H, nw=N_W) for l in layers]
+        # layers = [rearrange(l, 'b (nh nw) c -> b c nh nw', nh=N_H, nw=N_W) for l in layers]
+        layers = [l.reshape(l.size(0), N_H, N_W, l.size(2)).permute(0, 3, 1, 2) for l in layers]
 
         layers = [self.act_postprocess[idx](l) for idx, l in enumerate(layers)]
         # Project layers to chosen feature dim

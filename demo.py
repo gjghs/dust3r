@@ -42,7 +42,7 @@ def get_args_parser():
                         default=None)
     parser.add_argument("--weights", type=str, required=True, help="path to the model weights")
     parser.add_argument("--device", type=str, default='cuda', help="pytorch device")
-    parser.add_argument("--tmp_dir", type=str, default=None, help="value for tempfile.tempdir")
+    parser.add_argument("--tmp_dir", type=str, default='tmp', help="value for tempfile.tempdir")
     return parser
 
 

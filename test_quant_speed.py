@@ -1,4 +1,5 @@
 import torch
+import copy
 from dust3r.inference import inference, load_model
 from dust3r.utils.image import load_images
 from dust3r.image_pairs import make_pairs
@@ -9,6 +10,10 @@ from dust3r.utils.device import collate_with_cat
 from torch.ao.quantization import get_default_qconfig, get_default_qat_qconfig_mapping
 from torch.ao.quantization.quantize_fx import prepare_fx, convert_fx
 from torch.ao.quantization import QConfigMapping
+
+import torch._dynamo as torchdynamo
+from torch.ao.quantization._quantize_pt2e import convert_pt2e, prepare_pt2e
+import torch.ao.quantization._pt2e.quantizer.qnnpack_quantizer as qq
 
 if __name__ == '__main__':
     model_path = "checkpoints/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth"
@@ -43,14 +48,32 @@ if __name__ == '__main__':
     #         quant_model(**input)
     # model = quant_model
 
-    qconfig = get_default_qconfig("x86")
-    qconfig_mapping = QConfigMapping().set_global(qconfig)
-    prepared_model = prepare_fx(model, qconfig_mapping, input)  # fuse modules and insert observers
-    prepared_model.eval()
-    with torch.no_grad():
-        for i in range(5):
-            prepared_model(**input)
-    model = convert_fx(prepared_model).to(device)
+    # qconfig = get_default_qconfig("x86")
+    # qconfig_mapping = QConfigMapping().set_global(qconfig)
+    # prepared_model = prepare_fx(model, qconfig_mapping, input)  # fuse modules and insert observers
+    # prepared_model.eval()
+    # with torch.no_grad():
+    #     for i in range(5):
+    #         prepared_model(**input)
+    # model = convert_fx(prepared_model).to(device)
+
+    # Step 1: Trace the model into an FX graph of flattened ATen operators
+    exported_graph_module, guards = torchdynamo.export(
+        model,
+        *copy.deepcopy(input),
+        aten_graph=True,
+    )
+
+    # Step 2: Insert observers or fake quantize modules
+    quantizer = qq.QNNPackQuantizer()
+    operator_config = qq.get_symmetric_quantization_config(is_per_channel=True)
+    quantizer.set_global(operator_config)
+    prepared_graph_module = prepare_pt2e_quantizer(exported_graph_module, quantizer)
+
+    # Step 3: Quantize the model
+    convered_graph_module = convert_pt2e(prepared_graph_module)
+
+    # Step 4: Lower Reference Quantized Model into the backend
             
 
 

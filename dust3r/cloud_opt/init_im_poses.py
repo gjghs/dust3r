@@ -7,6 +7,7 @@
 import sys
 if sys.version_info < (3, 9):
     from functools import lru_cache as cache
+    cache = cache(maxsize=None)
 else:
     from functools import cache
 
@@ -239,7 +240,7 @@ def estimate_focal(pts3d_i, pp=None):
     return float(focal)
 
 
-@cache()
+@cache
 def pixel_grid(H, W):
     return np.mgrid[:W, :H].T.astype(np.float32)
 

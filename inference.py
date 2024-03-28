@@ -14,7 +14,7 @@ if __name__ == '__main__':
     model = load_model(model_path, device)
     # load_images can take a list of images or a directory
     images = load_images(['croco/assets/Chateau1.png', 'croco/assets/Chateau2.png'], size=512)
-    images = load_images(['/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00016.JPG', '/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00036.JPG'], size=512)
+    # images = load_images(['/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00016.JPG', '/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00036.JPG'], size=512)
     pairs = make_pairs(images, scene_graph='complete', prefilter=None, symmetrize=True)
     output = inference(pairs, model, device, batch_size=batch_size)
 

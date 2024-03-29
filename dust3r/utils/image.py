@@ -58,7 +58,7 @@ def _resize_pil_image(img, long_edge_size):
     return img.resize(new_size, interp)
 
 
-def load_images(folder_or_list, size, square_ok=False):
+def load_images(folder_or_list, size, square_ok=False, video_frequency=1):
     """ open and convert all images in a list or folder to proper input format for DUSt3R
     """
     if isinstance(folder_or_list, str):
@@ -99,9 +99,9 @@ def load_images(folder_or_list, size, square_ok=False):
             imgs.append(dict(img=ImgNorm(img)[None], true_shape=np.int32(
                 [img.size[::-1]]), idx=len(imgs), instance=str(len(imgs))))
         
-        if path.endswith(('.avi', '.mp4', '.m4v', '.mov', 'mkv', '.wmv', '.flv')):
+        if path.lower().endswith(('.avi', '.mp4', '.m4v', '.mov', 'mkv', '.wmv', '.flv')):
             cap = cv2.VideoCapture(path)
-            fps = int(cap.get(cv2.CAP_PROP_FPS) + 0.5)
+            fps = int(cap.get(cv2.CAP_PROP_FPS) + 0.5) * video_frequency
             frames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
             
             for numFrame in range(int(frames/fps)):

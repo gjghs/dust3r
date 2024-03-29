@@ -40,7 +40,7 @@ def get_args_parser():
     parser.add_argument("--server_port", type=int, help=("will start gradio app on this port (if available). "
                                                          "If None, will search for an available port starting at 7860."),
                         default=None)
-    parser.add_argument("--weights", type=str, required=True, help="path to the model weights")
+    parser.add_argument("--weights", type=str, help="path to the model weights", default='checkpoints\DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth') #, required=True)
     parser.add_argument("--device", type=str, default='cuda', help="pytorch device")
     parser.add_argument("--tmp_dir", type=str, default='tmp', help="value for tempfile.tempdir")
     return parser
@@ -115,12 +115,12 @@ def get_3D_model_from_scene(outdir, scene, min_conf_thr=3, as_pointcloud=False, 
 
 def get_reconstructed_scene(outdir, model, device, image_size, filelist, schedule, niter, min_conf_thr,
                             as_pointcloud, mask_sky, clean_depth, transparent_cams, cam_size,
-                            scenegraph_type, winsize, refid):
+                            scenegraph_type, winsize, refid, video_frequency):
     """
     from a list of images, run dust3r inference, global aligner.
     then run get_3D_model_from_scene
     """
-    imgs = load_images(filelist, size=image_size)
+    imgs = load_images(filelist, size=image_size, video_frequency=video_frequency)
     if len(imgs) == 1:
         imgs = [imgs[0], copy.deepcopy(imgs[0])]
         imgs[1]['idx'] = 1
@@ -202,6 +202,8 @@ def main_demo(tmpdirname, model, device, image_size, server_name, server_port):
                                                   value='complete', label="Scenegraph",
                                                   info="Define how to make pairs",
                                                   interactive=True)
+                video_frequency = gradio.Number(value=1, minimum=0, maximum=5000, interactive=True, 
+                                                label="Video Frequency", info="How many seconds between each frame in the video")
                 winsize = gradio.Slider(label="Scene Graph: Window Size", value=1,
                                         minimum=1, maximum=1, step=1, visible=False)
                 refid = gradio.Slider(label="Scene Graph: Id", value=0, minimum=0, maximum=0, step=1, visible=False)
@@ -233,7 +235,7 @@ def main_demo(tmpdirname, model, device, image_size, server_name, server_port):
             run_btn.click(fn=recon_fun,
                           inputs=[inputfiles, schedule, niter, min_conf_thr, as_pointcloud,
                                   mask_sky, clean_depth, transparent_cams, cam_size,
-                                  scenegraph_type, winsize, refid],
+                                  scenegraph_type, winsize, refid, video_frequency],
                           outputs=[scene, outmodel, outgallery])
             min_conf_thr.release(fn=model_from_scene_fun,
                                  inputs=[scene, min_conf_thr, as_pointcloud, mask_sky,

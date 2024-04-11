@@ -1,3 +1,4 @@
+import torch
 from dust3r.inference import inference, load_model
 from dust3r.utils.image import load_images
 from dust3r.image_pairs import make_pairs
@@ -5,7 +6,7 @@ from dust3r.cloud_opt import global_aligner, GlobalAlignerMode
 
 if __name__ == '__main__':
     model_path = "checkpoints/DUSt3R_ViTLarge_BaseDecoder_512_dpt.pth"
-    device = 'cuda'
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     batch_size = 1
     schedule = 'cosine'
     lr = 0.01
@@ -14,7 +15,6 @@ if __name__ == '__main__':
     model = load_model(model_path, device)
     # load_images can take a list of images or a directory
     images = load_images(['croco/assets/Chateau1.png', 'croco/assets/Chateau2.png'], size=512)
-    # images = load_images(['/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00016.JPG', '/group/ossdphi_algo_scratch_08/jieguo12/projects/nerfstudio/data/mipnerf360_v2/garden/images_4/frame_00036.JPG'], size=512)
     pairs = make_pairs(images, scene_graph='complete', prefilter=None, symmetrize=True)
     output = inference(pairs, model, device, batch_size=batch_size)
 

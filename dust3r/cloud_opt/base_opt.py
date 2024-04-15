@@ -314,7 +314,7 @@ class BasePCOptimizer (nn.Module):
             res.im_conf[i][sky] = 0
         return res
 
-    def show(self, show_pw_cams=False, show_pw_pts3d=False, cam_size=None, **kw):
+    def show(self, show_cams=True, show_pw_cams=False, show_pw_pts3d=False, cam_size=None, **kw):
         viz = SceneViz()
         if self.imgs is None:
             colors = np.random.randint(0, 256, size=(self.n_imgs, 3))
@@ -326,11 +326,12 @@ class BasePCOptimizer (nn.Module):
             colors = np.random.randint(256, size=(self.n_imgs, 3))
 
         # camera poses
-        im_poses = to_numpy(self.get_im_poses())
-        if cam_size is None:
-            cam_size = auto_cam_size(im_poses)
-        viz.add_cameras(im_poses, self.get_focals(), colors=colors,
-                        images=self.imgs, imsizes=self.imsizes, cam_size=cam_size)
+        if show_cams:
+            im_poses = to_numpy(self.get_im_poses())
+            if cam_size is None:
+                cam_size = auto_cam_size(im_poses)
+            viz.add_cameras(im_poses, self.get_focals(), colors=colors,
+                            images=self.imgs, imsizes=self.imsizes, cam_size=cam_size)
         if show_pw_cams:
             pw_poses = self.get_pw_poses()
             viz.add_cameras(pw_poses, color=(192, 0, 192), cam_size=cam_size)

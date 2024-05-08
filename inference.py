@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 from dust3r.inference import inference, load_model
 from dust3r.utils.image import load_images
 from dust3r.image_pairs import make_pairs
@@ -46,8 +47,16 @@ if __name__ == '__main__':
     pts3d = scene.get_pts3d()
     confidence_masks = scene.get_masks()
 
+    # # save pointcloud as pts file
+    # all_pts = torch.concat([pts3d[i][confidence_masks[i]] for i in range(len(pts3d))], dim=0)
+    # all_colors = (torch.concat([torch.tensor(imgs[i])[confidence_masks[i]] for i in range(len(imgs))], dim=0) * 255 + 0.1).to(torch.uint8)
+    # with open('points.pts', 'w+') as f:
+    #     f.write(str(len(all_pts)) + '\n')
+    #     for i in range(len(all_pts)):
+    #         f.write(' '.join([str(j.item()) for j in all_pts[i]]) + ' 255 ' + ' '.join([str(k.item()) for k in all_colors[i]]) + '\n')
+
     # visualize reconstruction
-    scene.show()
+    scene.show(show_cams=False)
 
     # find 2D-2D matches between the two images
     from dust3r.utils.geometry import find_reciprocal_matches, xy_grid

@@ -47,13 +47,13 @@ if __name__ == '__main__':
     pts3d = scene.get_pts3d()
     confidence_masks = scene.get_masks()
 
-    # # save pointcloud as pts file
+    # # save pointcloud as txt file
     # all_pts = torch.concat([pts3d[i][confidence_masks[i]] for i in range(len(pts3d))], dim=0)
     # all_colors = (torch.concat([torch.tensor(imgs[i])[confidence_masks[i]] for i in range(len(imgs))], dim=0) * 255 + 0.1).to(torch.uint8)
-    # with open('points.pts', 'w+') as f:
+    # with open('points.txt', 'w+') as f:
     #     f.write(str(len(all_pts)) + '\n')
     #     for i in range(len(all_pts)):
-    #         f.write(' '.join([str(j.item()) for j in all_pts[i]]) + ' 255 ' + ' '.join([str(k.item()) for k in all_colors[i]]) + '\n')
+    #         f.write(' '.join([str(j.item()) for j in all_pts[i]]) + ' ' + ' '.join([str(k.item()) for k in all_colors[i]]) + '\n')
 
     # visualize reconstruction
     scene.show(show_cams=False)
